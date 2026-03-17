@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SmartTicket AI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:        #0052CC;
+      --blue-light:  #0065FF;
+      --blue-hover:  #0747A6;
+      --blue-bg:     #DEEBFF;
+      --blue-subtle: #E9F2FF;
+      --green:       #006644;
+      --green-bg:    #E3FCEF;
+      --green-light: #00875A;
+      --orange:      #FF8B00;
+      --orange-bg:   #FFF0B3;
+      --red:         #DE350B;
+      --red-bg:      #FFEBE6;
+      --purple:      #6554C0;
+      --purple-bg:   #EAE6FF;
+      --bg:          #F4F5F7;
+      --surface:     #FFFFFF;
+      --sidebar-bg:  #1D2125;
+      --sidebar-txt: #9FADBC;
+      --sidebar-hover: #282E33;
+      --sidebar-active: #1C2B41;
+      --border:      #DFE1E6;
+      --border-med:  #C1C7D0;
+      --text-dark:   #172B4D;
+      --text-med:    #42526E;
+      --text-light:  #6B778C;
+      --text-xlight: #97A0AF;
+      --font:        'Nunito Sans', sans-serif;
+      --font-mono:   'Fira Code', monospace;
+      --radius:      3px;
+      --radius-lg:   8px;
+      --shadow-sm:   0 1px 2px rgba(9,30,66,0.12), 0 0 1px rgba(9,30,66,0.06);
+      --shadow-md:   0 3px 6px rgba(9,30,66,0.15), 0 0 1px rgba(9,30,66,0.1);
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text-dark);
+      display: flex;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ═══ SIDEBAR ═══ */
+    .sidebar {
+      width: 240px;
+      background: var(--sidebar-bg);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      height: 100vh;
+      position: fixed;
+      left: 0; top: 0;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px;
+      border-bottom: 1px solid #2C333A;
+    }
+
+    .sidebar-logo-icon {
+      width: 32px; height: 32px;
+      background: var(--blue-light);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    .sidebar-logo-text {
+      font-size: 15px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.3px;
+    }
+
+    .sidebar-logo-text span { color: #4C9AFF; }
+
+    .sidebar-section { padding: 16px 0 8px; }
+
+    .sidebar-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #626F7A;
+      padding: 0 16px 8px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      font-size: 13px;
+      color: var(--sidebar-txt);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-item:hover { background: var(--sidebar-hover); color: #fff; }
+
+    .sidebar-item.active {
+      background: var(--sidebar-active);
+      color: #fff;
+      border-left-color: var(--blue-light);
+    }
+
+    .sidebar-item-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+
+    .sidebar-badge {
+      margin-left: auto;
+      background: var(--blue);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 10px;
+    }
+
+    .sidebar-divider { height: 1px; background: #2C333A; margin: 8px 16px; }
+
+    .sidebar-bottom {
+      margin-top: auto;
+      padding: 12px 16px;
+      border-top: 1px solid #2C333A;
+    }
+
+    .sidebar-user { display: flex; align-items: center; gap: 10px; }
+
+    .avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #0065FF, #6554C0);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+
+    .sidebar-user-name { font-size: 12px; color: #fff; font-weight: 600; }
+    .sidebar-user-role { font-size: 10px; color: #626F7A; }
+
+    /* ═══ TOP NAV ═══ */
+    .topnav {
+      position: fixed;
+      top: 0; left: 240px; right: 0;
+      height: 52px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 24px;
+      gap: 16px;
+      z-index: 99;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .topnav-breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-light);
+    }
+
+    .topnav-breadcrumb a { color: var(--blue); text-decoration: none; font-weight: 600; }
+    .topnav-breadcrumb a:hover { text-decoration: underline; }
+    .topnav-breadcrumb .sep { color: var(--border-med); }
+    .topnav-breadcrumb .current { color: var(--text-dark); font-weight: 700; }
+
+    .topnav-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+
+    .chip {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+    }
+
+    .chip-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .chip.ok    { background: var(--green-bg);  color: var(--green-light); border-color: #ABF5D1; }
+    .chip.fail  { background: var(--red-bg);    color: var(--red);  border-color: #FFBDAD; }
+    .chip.check { background: var(--orange-bg); color: var(--orange); border-color: #FFE380; }
+    .chip.ok   .chip-dot { background: var(--green-light); }
+    .chip.fail .chip-dot { background: var(--red);    animation: blink 1s infinite; }
+    .chip.check .chip-dot{ background: var(--orange); animation: blink 1s infinite; }
+
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ═══ LAYOUT ═══ */
+    .main {
+      margin-left: 240px;
+      margin-top: 52px;
+      flex: 1;
+      min-height: calc(100vh - 52px);
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      align-items: start;
+    }
+
+    /* ═══ FORM PANEL ═══ */
+    .form-panel {
+      padding: 28px 24px;
+      border-right: 1px solid var(--border);
+      min-height: calc(100vh - 52px);
+    }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-dark);
+      margin-bottom: 4px;
+    }
+
+    .page-sub {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-bottom: 24px;
+    }
+
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .form-card-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-light);
+      background: #FAFBFC;
+    }
+
+    .form-body {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    .field { display: flex; flex-direction: column; gap: 4px; }
+
+    .field-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-med);
+    }
+
+    .field-label .req { color: var(--red); margin-left: 2px; }
+
+    input[type="text"], select, textarea {
+      font-family: var(--font);
+      font-size: 14px;
+      color: var(--text-dark);
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 7px 10px;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input[type="text"]:focus, select:focus, textarea:focus {
+      border-color: var(--blue-light);
+      box-shadow: 0 0 0 2px rgba(0,101,255,0.14);
+    }
+
+    textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
+    select { cursor: pointer; }
+
+    input.shake, textarea.shake {
+      border-color: var(--red) !important;
+      animation: shake 0.3s ease;
+    }
+    @keyframes shake {
+      0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)}
+    }
+
+    .priority-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
+
+    .priority-option {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 10px 6px;
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 11px; font-weight: 700;
+      color: var(--text-light);
+    }
+
+    .priority-option:hover { border-color: var(--border-med); background: #FAFBFC; }
+    .priority-option.selected.critical { border-color: #DE350B; background: #FFEBE6; color: #DE350B; }
+    .priority-option.selected.high     { border-color: #FF5630; background: #FFF0E6; color: #FF5630; }
+    .priority-option.selected.medium   { border-color: #FF8B00; background: #FFF0B3; color: #974F0C; }
+    .priority-option.selected.low      { border-color: #36B37E; background: #E3FCEF; color: #006644; }
+
+    .priority-icon { font-size: 18px; }
+
+    .action-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
+      background: #FAFBFC;
+    }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 8px 16px;
+      border-radius: var(--radius);
+      border: none;
+      font-family: var(--font);
+      font-size: 14px; font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-primary:hover { background: var(--blue-hover); box-shadow: var(--shadow-sm); }
+
+    .btn-success { background: var(--green-light); color: #fff; }
+    .btn-success:hover { background: var(--green); box-shadow: var(--shadow-sm); }
+
+    .btn-ghost {
+      background: transparent; color: var(--text-med);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg); border-color: var(--border-med); }
+
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-spinner {
+      width: 13px; height: 13px;
+      border: 2px solid rgba(255,255,255,0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ═══ RESULTS PANEL ═══ */
+    .results-panel {
+      padding: 28px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .results-heading {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .result-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: none;
+      animation: slideDown 0.22s ease both;
+    }
+
+    .result-card.visible { display: block; }
+
+    @keyframes slideDown {
+      from { opacity:0; transform: translateY(-8px); }
+      to   { opacity:1; transform: translateY(0); }
+    }
+
+    .rc-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      background: #FAFBFC;
+    }
+
+    .rc-title {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--text-light);
+    }
+
+    .lozenge {
+      font-size: 11px; font-weight: 700;
+      padding: 2px 8px; border-radius: 3px;
+      text-transform: uppercase; letter-spacing: 0.03em;
+    }
+
+    .loz-success { background: var(--green-bg);  color: var(--green); }
+    .loz-info    { background: var(--blue-bg);   color: var(--blue-hover); }
+    .loz-warn    { background: var(--orange-bg); color: #974F0C; }
+    .loz-error   { background: var(--red-bg);    color: var(--red); }
+    .loz-purple  { background: var(--purple-bg); color: var(--purple); }
+
+    .rc-body { padding: 14px; }
+
+    /* Empty state */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 40px 20px; text-align: center;
+      color: var(--text-xlight); gap: 8px;
+    }
+
+    .empty-state-icon { font-size: 38px; }
+    .empty-state-title { font-size: 14px; font-weight: 700; color: var(--text-light); }
+    .empty-state-sub   { font-size: 12px; line-height: 1.6; }
+
+    /* Assignment */
+    .assign-row {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 12px;
+    }
+
+    .team-avatar {
+      width: 42px; height: 42px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+
+    .team-avatar.billing   { background: #DEEBFF; }
+    .team-avatar.technical { background: #E3FCEF; }
+    .team-avatar.hr        { background: #EAE6FF; }
+    .team-avatar.default   { background: var(--blue-subtle); }
+
+    .assign-team-name { font-size: 18px; font-weight: 800; color: var(--text-dark); }
+    .assign-team-sub  { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+
+    .conf-section {
+      background: #FAFBFC; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 12px;
+    }
+
+    .conf-label {
+      display: flex; justify-content: space-between;
+      font-size: 11px; font-weight: 700; color: var(--text-light); margin-bottom: 7px;
+    }
+
+    .conf-pct { color: var(--blue); font-family: var(--font-mono); }
+
+    .conf-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .conf-fill  { height: 100%; border-radius: 3px; background: var(--blue); transition: width 0.7s cubic-bezier(0.16,1,0.3,1); }
+
+    /* Resolution */
+    .resolution-box {
+      background: #FAFBFC; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 14px;
+      font-size: 13px; line-height: 1.75; color: var(--text-dark);
+      white-space: pre-wrap;
+    }
+
+    /* Similar tickets */
+    .similar-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+
+    .similar-table th {
+      text-align: left; padding: 7px 10px;
+      font-size: 10px; font-weight: 700;
+      letter-spacing: 0.07em; text-transform: uppercase;
+      color: var(--text-light);
+      border-bottom: 2px solid var(--border);
+      background: #FAFBFC;
+    }
+
+    .similar-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .similar-table tr:last-child td { border-bottom: none; }
+    .similar-table tr:hover td { background: var(--blue-subtle); }
+
+    .score-wrap { display: flex; align-items: center; gap: 6px; }
+    .score-track { width: 44px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .score-fill  { height: 100%; background: var(--blue); border-radius: 2px; }
+    .score-num { font-family: var(--font-mono); font-size: 11px; color: var(--text-med); }
+
+    .team-tag {
+      display: inline-block; padding: 2px 8px;
+      border-radius: 3px; font-size: 11px; font-weight: 700;
+      background: var(--blue-bg); color: var(--blue-hover);
+    }
+
+    .res-snippet {
+      color: var(--text-light); overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; max-width: 140px;
+    }
+
+    /* Error */
+    .error-banner {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 14px;
+      background: var(--red-bg); border: 1px solid #FFBDAD;
+      border-radius: var(--radius); font-size: 13px; color: var(--red);
+    }
+
+    /* Responsive */
+    @media (max-width: 960px) {
+      .main { grid-template-columns: 1fr; }
+      .form-panel { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+    @media (max-width: 600px) {
+      .sidebar { width: 56px; }
+      .sidebar-logo-text, .sidebar-item > span:not(.sidebar-item-icon),
+      .sidebar-section-label, .sidebar-user-info, .sidebar-badge { display: none; }
+      .main, .topnav { margin-left: 56px; }
+      .form-row { grid-template-columns: 1fr; }
+      .priority-grid { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">🎫</div>
+    <span class="sidebar-logo-text">Smart<span>Ticket</span> AI</span>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Main</div>
+    <div class="sidebar-item active">
+      <span class="sidebar-item-icon">➕</span>
+      <span>Create Ticket</span>
+    </div>
+    <div class="sidebar-item">
+      <span class="sidebar-item-icon">📋</span>
+      <span>All Tickets</span>
+      <span class="sidebar-badge">16k</span>
+    </div>
+    <div class="sidebar-item">
+      <span class="sidebar-item-icon">📊</span>
+      <span>Dashboard</span>
+    </div>
+    <div class="sidebar-item">
+      <span class="sidebar-item-icon">🔍</span>
+      <span>Search</span>
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Queues</div>
+    <div class="sidebar-item">
+      <span class="sidebar-item-icon">💳</span>
+      <span>Billing &amp; Payments</span>
+    </div>
+    <div class="sidebar-item">
+      <span class="sidebar-item-icon">🔧</span>
+      <span>Technical Support</span>
+    </div>
+    <div class="sidebar-item">
+      <span class="sidebar-item-icon">👥</span>
+      <span>HR &amp; Accounts</span>
+    </div>
+    <div class="sidebar-item">
+      <span class="sidebar-item-icon">🌐</span>
+      <span>Network / IT</span>
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Settings</div>
+    <div class="sidebar-item">
+      <span class="sidebar-item-icon">⚙️</span>
+      <span>Configuration</span>
+    </div>
+  </div>
+
+  <div class="sidebar-bottom">
+    <div class="sidebar-user">
+      <div class="avatar">RA</div>
+      <div>
+        <div class="sidebar-user-name">Raja P.</div>
+        <div class="sidebar-user-role">Support Agent</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- TOP NAV -->
+<div class="topnav">
+  <div class="topnav-breadcrumb">
+    <a href="#">SmartTicket AI</a>
+    <span class="sep">›</span>
+    <a href="#">Tickets</a>
+    <span class="sep">›</span>
+    <span class="current">Create Ticket</span>
+  </div>
+  <div class="topnav-right">
+    <div class="chip check" id="chip-api"><span class="chip-dot"></span>API</div>
+    <div class="chip check" id="chip-db"><span class="chip-dot"></span>Vector DB</div>
+    <div class="chip check" id="chip-llm"><span class="chip-dot"></span>LLM</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- FORM PANEL -->
+  <div class="form-panel">
+    <div class="page-title">Create New Ticket</div>
+    <div class="page-sub">SmartTicket AI will automatically route to the right team and suggest a resolution.</div>
+
+    <div class="form-card">
+      <div class="form-card-header">📝 Ticket Details</div>
+      <div class="form-body">
+        <div class="field">
+          <label class="field-label">Summary <span class="req">*</span></label>
+          <input type="text" id="summaryInput" placeholder="Short description of the issue…"/>
+        </div>
+        <div class="field">
+          <label class="field-label">Description <span class="req">*</span></label>
+          <textarea id="ticketInput" rows="4" placeholder="Full details — steps to reproduce, impact, what you've tried…"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="field">
+            <label class="field-label">Issue Type</label>
+            <select id="issueType">
+              <option>🐛 Bug / Error</option>
+              <option>🔑 Access Issue</option>
+              <option>💳 Billing</option>
+              <option>🖥️ Hardware</option>
+              <option>🌐 Network</option>
+              <option>❓ Question</option>
+              <option>📌 Other</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="field-label">Affected System</label>
+            <input type="text" id="system" placeholder="e.g. VPN, Payroll, Email…"/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-card-header">🚦 Priority</div>
+      <div class="form-body">
+        <div class="priority-grid">
+          <div class="priority-option critical" onclick="setPriority(this,'critical')">
+            <span class="priority-icon">🔴</span>Critical
+          </div>
+          <div class="priority-option high" onclick="setPriority(this,'high')">
+            <span class="priority-icon">🟠</span>High
+          </div>
+          <div class="priority-option medium selected" id="defaultPri" onclick="setPriority(this,'medium')">
+            <span class="priority-icon">🟡</span>Medium
+          </div>
+          <div class="priority-option low" onclick="setPriority(this,'low')">
+            <span class="priority-icon">🟢</span>Low
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="action-bar">
+        <button class="btn btn-primary" id="btnAssign" onclick="handleAssign()">⚡ Assign Team</button>
+        <button class="btn btn-success" id="btnResolve" onclick="handleResolve()">💡 Suggest Resolution</button>
+        <button class="btn btn-ghost" onclick="clearForm()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULTS PANEL -->
+  <div class="results-panel">
+    <div class="results-heading">AI Analysis</div>
+
+    <!-- Empty -->
+    <div class="result-card visible" id="emptyCard">
+      <div class="empty-state">
+        <div class="empty-state-icon">🤖</div>
+        <div class="empty-state-title">Ready to analyse</div>
+        <div class="empty-state-sub">Fill in the ticket details and click<br/><strong>Assign Team</strong> or <strong>Suggest Resolution</strong></div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div class="result-card" id="errorCard">
+      <div class="rc-header">
+        <span class="rc-title">⚠️ Error</span>
+        <span class="lozenge loz-error">Failed</span>
+      </div>
+      <div class="rc-body">
+        <div class="error-banner">⛔ &nbsp;<span id="errorText">An error occurred.</span></div>
+      </div>
+    </div>
+
+    <!-- Assignment -->
+    <div class="result-card" id="assignCard">
+      <div class="rc-header">
+        <span class="rc-title">🎯 Team Assignment</span>
+        <span class="lozenge loz-success" id="assignLoz">Done</span>
+      </div>
+      <div class="rc-body">
+        <div class="assign-row">
+          <div class="team-avatar default" id="teamAvatar">🏢</div>
+          <div>
+            <div class="assign-team-name" id="teamName">—</div>
+            <div class="assign-team-sub"  id="teamSub">—</div>
+          </div>
+        </div>
+        <div class="conf-section" id="confSection" style="display:none">
+          <div class="conf-label">
+            <span>Confidence Score</span>
+            <span class="conf-pct" id="confPct">0%</span>
+          </div>
+          <div class="conf-track">
+            <div class="conf-fill" id="confFill" style="width:0%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resolution -->
+    <div class="result-card" id="resolveCard">
+      <div class="rc-header">
+        <span class="rc-title">💡 Suggested Resolution</span>
+        <span class="lozenge loz-info">AI Generated</span>
+      </div>
+      <div class="rc-body">
+        <div class="resolution-box" id="resolutionText">—</div>
+      </div>
+    </div>
+
+    <!-- Similar tickets -->
+    <div class="result-card" id="similarCard">
+      <div class="rc-header">
+        <span class="rc-title">🔍 Similar Past Tickets</span>
+        <span class="lozenge loz-purple" id="similarLoz">0 matches</span>
+      </div>
+      <div class="rc-body" style="padding:0">
+        <table class="similar-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Match %</th>
+              <th>Team</th>
+              <th>Resolution</th>
+            </tr>
+          </thead>
+          <tbody id="similarBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const API = 'http://127.0.0.1:8000';
+  let selectedPriority = 'medium';
+
+  // Priority
+  function setPriority(el, val) {
+    document.querySelectorAll('.priority-option').forEach(o => o.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedPriority = val;
+  }
+  document.getElementById('defaultPri').classList.add('selected');
+
+  // Health
+  async function checkHealth() {
+    try {
+      const r = await fetch(`${API}/health`, { signal: AbortSignal.timeout(5000) });
+      const d = await r.json();
+      setChip('chip-api', true);
+      setChip('chip-db',  d.endee,  'Vector DB');
+      setChip('chip-llm', d.ollama, 'LLM');
+    } catch {
+      ['chip-api','chip-db','chip-llm'].forEach(id => setChip(id, false));
+    }
+  }
+
+  function setChip(id, ok, label) {
+    const el = document.getElementById(id);
+    const lbl = label || el.textContent.replace('●','').trim();
+    el.className = `chip ${ok ? 'ok' : 'fail'}`;
+    el.innerHTML = `<span class="chip-dot"></span>${lbl || id.replace('chip-','').toUpperCase()}`;
+  }
+
+  // Team metadata
+  const TEAM_MAP = {
+    billing:['💳','billing'], payment:['💳','billing'],
+    technical:['🔧','technical'], tech:['🔧','technical'], it:['🖥️','technical'],
+    hr:['👥','hr'], human:['👥','hr'],
+    network:['🌐','technical'], security:['🔒','technical'],
+  };
+
+  function teamMeta(name = '') {
+    const l = name.toLowerCase();
+    for (const [k, v] of Object.entries(TEAM_MAP)) {
+      if (l.includes(k)) return { icon: v[0], cls: v[1] };
+    }
+    return { icon: '🏢', cls: 'default' };
+  }
+
+  function getText() {
+    const s = document.getElementById('summaryInput').value.trim();
+    const d = document.getElementById('ticketInput').value.trim();
+    return [s, d].filter(Boolean).join('. ');
+  }
+
+  // Assign
+  async function handleAssign() {
+    const text = getText();
+    if (!text) { flash(); return; }
+    resetResults();
+    setBtn('btnAssign', true);
+    setBtn('btnResolve', false);
+    try {
+      let data, rag = true;
+      try {
+        const r = await fetch(`${API}/assign-rag`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, top_k: 5 }),
+          signal: AbortSignal.timeout(65000)
+        });
+        data = await r.json();
+        if (data.status === 'llm_error' || !data.team || data.team === 'Unknown') throw new Error();
+      } catch {
+        rag = false;
+        const r = await fetch(`${API}/assign`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, top_k: 5 }),
+          signal: AbortSignal.timeout(15000)
+        });
+        data = await r.json();
+      }
+      renderAssign(data, rag);
+    } catch {
+      showError('Cannot reach the API. Make sure uvicorn is running on port 8000.');
+    } finally {
+      setBtn('btnAssign', false, '⚡ Assign Team');
+      setBtn('btnResolve', false, '💡 Suggest Resolution');
+    }
+  }
+
+  // Resolve
+  async function handleResolve() {
+    const text = getText();
+    if (!text) { flash(); return; }
+    resetResults();
+    setBtn('btnResolve', true);
+    setBtn('btnAssign', false);
+    try {
+      let data, rag = true;
+      try {
+        const r = await fetch(`${API}/resolve-rag`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, top_k: 5 }),
+          signal: AbortSignal.timeout(65000)
+        });
+        data = await r.json();
+        if (data.status === 'llm_error') throw new Error();
+      } catch {
+        rag = false;
+        const r = await fetch(`${API}/resolve`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, top_k: 5 }),
+          signal: AbortSignal.timeout(15000)
+        });
+        data = await r.json();
+      }
+      renderResolve(data, rag);
+    } catch {
+      showError('Cannot reach the API. Make sure uvicorn is running on port 8000.');
+    } finally {
+      setBtn('btnResolve', false, '💡 Suggest Resolution');
+      setBtn('btnAssign', false, '⚡ Assign Team');
+    }
+  }
+
+  function renderAssign(data, rag) {
+    hide('emptyCard');
+    const team = data.team || data.predicted_team || 'Unknown';
+    const meta = teamMeta(team);
+    document.getElementById('teamAvatar').textContent = meta.icon;
+    document.getElementById('teamAvatar').className   = `team-avatar ${meta.cls}`;
+    document.getElementById('teamName').textContent   = team;
+    document.getElementById('assignLoz').textContent  = rag ? 'RAG + LLM' : 'Vector Match';
+    document.getElementById('assignLoz').className    = `lozenge ${rag ? 'loz-success' : 'loz-info'}`;
+
+    if (rag && data.reason) {
+      document.getElementById('teamSub').textContent = data.reason;
+      document.getElementById('confSection').style.display = 'none';
+    } else {
+      const conf = data.confidence || 0;
+      document.getElementById('teamSub').textContent = `Based on ${data.similar_tickets || '?'} similar tickets`;
+      document.getElementById('confSection').style.display = 'block';
+      setTimeout(() => {
+        document.getElementById('confFill').style.width = `${conf * 100}%`;
+        document.getElementById('confPct').textContent  = `${Math.round(conf * 100)}%`;
+      }, 60);
+    }
+    show('assignCard');
+  }
+
+  function renderResolve(data, rag) {
+    hide('emptyCard');
+    document.getElementById('resolutionText').textContent =
+      data.resolution || data.suggested_resolution || 'No resolution available.';
+    show('resolveCard');
+  }
+
+  function showError(msg) {
+    hide('emptyCard');
+    document.getElementById('errorText').textContent = msg;
+    show('errorCard');
+  }
+
+  function resetResults() {
+    ['assignCard','resolveCard','similarCard','errorCard'].forEach(hide);
+    show('emptyCard');
+  }
+
+  function show(id) { document.getElementById(id).classList.add('visible'); }
+  function hide(id) { document.getElementById(id).classList.remove('visible'); }
+
+  function setBtn(id, loading, label) {
+    const btn = document.getElementById(id);
+    if (loading) {
+      btn.disabled = true;
+      btn.innerHTML = `<div class="btn-spinner"></div> Processing…`;
+    } else {
+      btn.disabled = false;
+      if (label) btn.innerHTML = label;
+    }
+  }
+
+  function flash() {
+    ['summaryInput','ticketInput'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el.value.trim()) {
+        el.classList.add('shake');
+        el.focus();
+        setTimeout(() => el.classList.remove('shake'), 400);
+      }
+    });
+  }
+
+  function clearForm() {
+    ['summaryInput','ticketInput','system'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('issueType').selectedIndex = 0;
+    setPriority(document.getElementById('defaultPri'), 'medium');
+    resetResults();
+  }
+
+  checkHealth();
+  setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>
