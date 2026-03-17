@@ -1,0 +1,34 @@
+# SmartSupport AI - Python Dependencies
+
+# ═══════════════════════════════════════════════════════════════
+# Web Framework
+# ═══════════════════════════════════════════════════════════════
+fastapi==0.115.5          # Modern async web framework
+uvicorn[standard]==0.32.1  # ASGI server with WebSocket support
+pydantic==2.12.5           # Data validation using Python type hints
+
+# ═══════════════════════════════════════════════════════════════
+# Vector Embeddings
+# ═══════════════════════════════════════════════════════════════
+sentence-transformers==3.3.1  # Neural text embeddings (all-MiniLM-L6-v2)
+torch>=2.0.0                  # PyTorch backend for sentence-transformers
+
+# ═══════════════════════════════════════════════════════════════
+# Endee Vector Database Client (Direct HTTP - No SDK)
+# ═══════════════════════════════════════════════════════════════
+requests==2.32.3   # HTTP client with connection pooling
+msgpack==1.1.2     # Binary serialization (Endee wire protocol)
+orjson==3.11.7     # Fast JSON serialization for metadata
+numpy>=1.24.0      # Vector operations
+
+# ═══════════════════════════════════════════════════════════════
+# Data Processing & Utilities
+# ═══════════════════════════════════════════════════════════════
+pandas==2.2.3      # CSV processing and data manipulation
+tqdm==4.67.0       # Progress bars for data ingestion
+
+# ═══════════════════════════════════════════════════════════════
+# Optional: Jupyter Notebook Support
+# ═══════════════════════════════════════════════════════════════
+# jupyter==1.0.0
+# notebook==7.0.0

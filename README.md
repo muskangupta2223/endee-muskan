@@ -1,139 +1,301 @@
-<p align="center">
-  <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.svg">
-      <source media="(prefers-color-scheme: light)" srcset="docs/assets/logo-light.svg">
-      <img height="100" alt="Endee" src="docs/assets/logo-dark.svg">
-  </picture>
-</p>
+# 🎫 SmartTicket AI
 
-<p align="center">
-    <b>High-performance open-source vector database for AI search, RAG, semantic search, and hybrid retrieval.</b>
-</p>
+> AI-powered support ticket routing and auto-resolution — built with FastAPI, Endee vector database, and Llama 3
 
-<p align="center">
-    <a href="./docs/getting-started.md"><img src="https://img.shields.io/badge/Quick_Start-Local_Setup-success?style=flat-square" alt="Quick Start"></a>
-    <a href="https://docs.endee.io/quick-start"><img src="https://img.shields.io/badge/Docs-Quick_Start-success?style=flat-square" alt="Docs"></a>
-    <a href="https://github.com/endee-io/endee/blob/master/LICENSE"><img src="https://img.shields.io/github/license/endee-io/endee?style=flat-square" alt="License"></a>
-    <a href="https://discord.gg/5HFGqDZQE3"><img src="https://img.shields.io/badge/Discord-Join_Chat-5865F2?logo=discord&style=flat-square" alt="Discord"></a>
-    <a href="https://endee.io/"><img src="https://img.shields.io/badge/Website-Endee-111111?style=flat-square" alt="Website"></a>
-    <!-- <a href="https://endee.io/benchmarks"><img src="https://img.shields.io/badge/Benchmarks-Coming_Soon-1F8B4C?style=flat-square" alt="Benchmarks"></a> -->
-    <!-- <a href="https://endee.io/cloud"><img src="https://img.shields.io/badge/Cloud-Coming_Soon-2496ED?style=flat-square" alt="Cloud"></a> -->
-</p>
+SmartTicket AI automatically assigns incoming support tickets to the correct team and generates resolution suggestions by retrieving similar historical tickets using vector search, then reasoning over them with a local LLM. No data leaves your machine.
 
-<p align="center">
-<strong><a href="./docs/getting-started.md">Quick Start</a> • <a href="#why-endee">Why Endee</a> • <a href="#use-cases">Use Cases</a> • <a href="#features">Features</a> • <a href="#api-and-clients">API and Clients</a> • <a href="#docs-and-links">Docs</a> • <a href="#community-and-contact">Contact</a></strong>
-</p>
+---
 
-# Endee: Open-Source Vector Database for AI Search
+## ✨ Features
 
-**Endee** is a high-performance open-source vector database built for AI search and retrieval workloads. It is designed for teams building **RAG pipelines**, **semantic search**, **hybrid search**, recommendation systems, and filtered vector retrieval APIs that need production-oriented performance and control.
+- **⚡ Smart Team Assignment** — vector similarity search over 16,340 historical tickets with majority-vote prediction
+- **💡 RAG Resolution Generation** — Llama 3 generates tailored responses using retrieved ticket context
+- **🎯 Confidence Scoring** — percentage score showing how strongly similar tickets agree on a team
+- **🔄 Graceful Fallback** — if the LLM is slow or unavailable, automatically falls back to vector-only matching
+- **🖥️ Jira-style UI** — clean, office-friendly interface served at `/ui`
+- **🔒 Fully local** — Endee + Ollama run entirely on-device; no API keys, no cloud calls
 
-Endee combines vector search with filtering, sparse retrieval support, backup workflows, and deployment flexibility across local builds and Docker-based environments. The project is implemented in C++ and optimized for modern CPU targets, including AVX2, AVX512, NEON, and SVE2.
+---
 
-If you want the fastest path to evaluate Endee locally, start with the [Getting Started guide](./docs/getting-started.md) or the hosted docs at [docs.endee.io](https://docs.endee.io/quick-start).
+## 🏗️ Architecture
 
-## Why Endee
-
-- Built as a dedicated vector database for AI applications, search systems, and retrieval-heavy workloads.
-- Supports dense vector retrieval plus sparse search capabilities for hybrid search use cases.
-- Includes payload filtering for metadata-aware retrieval and application-specific query logic.
-- Ships with operational features already documented in this repo, including backup flows and runtime observability.
-- Offers flexible deployment paths: local scripts, manual builds, Docker images, and prebuilt registry images.
-
-## Getting Started
-
-The full installation, build, Docker, runtime, and authentication instructions are in [docs/getting-started.md](./docs/getting-started.md).
-
-Fastest local path:
-
-```bash
-chmod +x ./install.sh ./run.sh
-./install.sh --release --avx2
-./run.sh
+```
+Browser (static/index.html)
+         │
+         ▼
+  FastAPI :8000  (backend/main.py)
+         │
+    ┌────┴─────────────────┐
+    ▼                       ▼
+Endee Vector DB :8080    Ollama :11434
+HNSW · cosine · int8d    llama3 (local LLM)
+    ▲
+    │
+SentenceTransformers
+all-MiniLM-L6-v2 (384d)
 ```
 
-The server listens on port `8080`. For detailed setup paths, supported operating systems, CPU optimization flags, Docker usage, and authentication examples, use:
+### Data Flow
 
-- [Getting Started](./docs/getting-started.md)
-- [Hosted Quick Start Docs](https://docs.endee.io/quick-start)
+```
+Ingest:  cleaned_tickets.csv → embed_batch() → insert_batch() → Endee index
+Query:   user ticket → embed_text() → search() → top-K results
+Assign:  top-K teams → majority_vote() → predicted team + confidence
+RAG:     top-K results → build_context() → LLM prompt → team / resolution
+```
 
-## Use Cases
+---
 
-### RAG and AI Retrieval
+## 🛠️ Tech Stack
 
-Use Endee as the retrieval layer for question answering, chat assistants, copilots, and other RAG applications that need fast vector search with metadata-aware filtering.
+| Layer | Technology |
+|---|---|
+| API | FastAPI + Uvicorn |
+| Vector DB | [Endee](https://github.com/billionai/endee) — HNSW, cosine, int8 quantization |
+| Embeddings | `sentence-transformers/all-MiniLM-L6-v2` (384 dimensions) |
+| LLM | [Ollama](https://ollama.com) — llama3 (runs locally) |
+| Frontend | Vanilla HTML / CSS / JS — no framework |
 
-### Agentic AI and AI Agent Memory
+---
 
-Use Endee as the long-term memory and context retrieval layer for AI agents built with frameworks like LangChain, CrewAI, AutoGen, and LlamaIndex. Store and retrieve past observations, tool outputs, conversation history, and domain knowledge mid-execution with low-latency filtered vector search, so your autonomous agents get the right context without stalling their reasoning loop.
+## 📦 Prerequisites
 
-### Semantic Search
+- Python 3.8+
+- [Ollama](https://ollama.com/download) installed
+- Endee binary (`ndd-avx2`) built and available
+- `cleaned_tickets.csv` placed in the `data/` directory
 
-Build semantic search experiences for documents, products, support content, and knowledge bases using vector similarity search instead of exact keyword-only matching.
+---
 
-### Hybrid Search
+## 🚀 Setup & Installation
 
-Combine dense retrieval, sparse vectors, and filtering to improve relevance for search workflows where both semantic understanding and term-level precision matter.
+### 1. Clone the repository
 
-### Recommendations and Matching
+```bash
+git clone https://github.com/your-username/smart-support-ai.git
+cd smart-support-ai
+```
 
-Support recommendation, similarity matching, and nearest-neighbor retrieval workflows across text, embeddings, and other high-dimensional representations.
+### 2. Create virtual environment and install dependencies
 
-## Features
+```bash
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-- **Vector search** for AI retrieval and semantic similarity workloads.
-- **Hybrid retrieval support** with sparse vector capabilities documented in [docs/sparse.md](./docs/sparse.md).
-- **Payload filtering** for structured retrieval logic documented in [docs/filter.md](./docs/filter.md).
-- **Backup APIs and flows** documented in [docs/backup-system.md](./docs/backup-system.md).
-- **Operational logging and instrumentation** documented in [docs/logs.md](./docs/logs.md) and [docs/mdbx-instrumentation.md](./docs/mdbx-instrumentation.md).
-- **CPU-targeted builds** for AVX2, AVX512, NEON, and SVE2 deployments.
-- **Docker deployment options** for local and server environments.
+### 3. Pull the LLM model
 
-## API and Clients
+```bash
+ollama pull llama3
+```
 
-Endee exposes an HTTP API for managing indexes and serving retrieval workloads. The current repo documentation and examples focus on running the server directly and calling its API endpoints.
+### 4. Start Endee
 
-Current developer entry points:
+```bash
+cd ~/endee
+export NDD_DATA_DIR=$(pwd)/data
+./build/ndd-avx2
+```
 
-- [Getting Started](./docs/getting-started.md) for local build and run flows
-- [Hosted Docs](https://docs.endee.io/quick-start) for product documentation
-- [Release Notes 1.0.0](https://github.com/endee-io/endee/releases/tag/1.0.0) for recent platform changes
+### 5. Ingest ticket data *(run once)*
 
-## Docs and Links
+```bash
+cd ~/smart-support-ai
+source venv/bin/activate
+python ingest_tickets.py
+```
 
-- [Getting Started](./docs/getting-started.md)
-- [Hosted Documentation](https://docs.endee.io/quick-start)
-- [Release Notes](https://github.com/endee-io/endee/releases/tag/1.0.0)
-- [Sparse Search](./docs/sparse.md)
-- [Filtering](./docs/filter.md)
-- [Backups](./docs/backup-system.md)
+Embeds all 16k tickets from `data/cleaned_tickets.csv` and loads them into Endee.
 
-## Community and Contact
+### 6. Start the API server
 
-- Join the community on [Discord](https://discord.gg/5HFGqDZQE3)
-- Visit the website at [endee.io](https://endee.io/)
-- For trademark or branding permissions, contact [enterprise@endee.io](mailto:enterprise@endee.io)
+```bash
+uvicorn backend.main:app --reload --port 8000
+```
 
-## Contributing
+### 7. Open the UI
 
-We welcome contributions from the community to help make vector search faster and more accessible for everyone.
+```
+http://127.0.0.1:8000/ui
+```
 
-- Submit pull requests for fixes, features, and improvements
-- Report bugs or performance issues through GitHub issues
-- Propose enhancements for search quality, performance, and deployment workflows
+---
 
-## License
+## ✅ Verify Setup
 
-Endee is open source software licensed under the **Apache License 2.0**. See the [LICENSE](./LICENSE) file for full terms.
+Run the diagnostics script to confirm all components are working:
 
-## Trademark and Branding
+```bash
+python test_setup.py
+```
 
-“Endee” and the Endee logo are trademarks of Endee Labs.
+Expected output:
+```
+✅  CSV file          (11.9 MB)
+✅  Endee server      Running at localhost:8080
+✅  Embedding model   all-MiniLM-L6-v2 (dim=384)
+✅  Index exists      total_elements=16,340
+✅  Index search      Sample result — team: Billing and Payments
+✅  Ollama server     Running at localhost:11434
+✅  llama3 model      Available
+✅  API server        Running at localhost:8000
+✅  index.html        Found at static/index.html
+```
 
-The Apache License 2.0 does not grant permission to use the Endee name, logos, or branding in a way that suggests endorsement or affiliation.
+---
 
-If you offer a hosted or managed service based on this software, you must use your own branding and avoid implying it is an official Endee service.
+## 📡 API Reference
 
-## Third-Party Software
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/health` | Status of all system components |
+| `POST` | `/assign` | Team assignment via vector similarity + majority vote |
+| `POST` | `/resolve` | Resolution from the closest matching historical ticket |
+| `POST` | `/assign-rag` | Team assignment using RAG + Llama 3 |
+| `POST` | `/resolve-rag` | Resolution generation using RAG + Llama 3 |
+| `GET` | `/ui` | Frontend interface |
+| `GET` | `/docs` | Interactive Swagger API docs |
 
-This project includes or depends on third-party software components licensed under their respective open-source licenses. Use of those components is governed by their own license terms.
+### Request body (all POST endpoints)
+
+```json
+{
+  "text": "Ticket description (10–5000 characters)",
+  "top_k": 5
+}
+```
+
+### Example — Assign ticket (RAG)
+
+```bash
+curl -X POST http://localhost:8000/assign-rag \
+  -H "Content-Type: application/json" \
+  -d '{"text": "My laptop cannot connect to the VPN after the Windows update", "top_k": 5}'
+```
+
+```json
+{
+  "team": "Technical Support",
+  "reason": "Similar VPN connectivity issues were consistently routed to Technical Support.",
+  "status": "success"
+}
+```
+
+### Example — Get resolution (RAG)
+
+```bash
+curl -X POST http://localhost:8000/resolve-rag \
+  -H "Content-Type: application/json" \
+  -d '{"text": "I was charged twice for my subscription this month", "top_k": 5}'
+```
+
+```json
+{
+  "resolution": "We apologise for the duplicate charge. Our billing team has been notified and will process a refund within 3–5 business days. Please check your email for a confirmation.",
+  "status": "success"
+}
+```
+
+---
+
+## 🧪 Usage Examples
+
+Try these in the UI at `http://127.0.0.1:8000/ui` to see SmartTicket AI in action.
+
+---
+
+### Example 1 — Technical Support (VPN Issue)
+
+| Field | Value |
+|---|---|
+| **Summary** | Laptop won't connect to VPN |
+| **Description** | My laptop stopped connecting to the company VPN after the latest Windows update. I get error code 800. Other colleagues on the same network are fine. |
+| **Issue Type** | 🐛 Bug / Error |
+| **Affected System** | VPN |
+| **Priority** | 🟠 High |
+
+**Expected result:**
+```
+🔧 Team:   Technical Support
+💬 Reason: Similar VPN and network connectivity issues were handled by Technical Support.
+```
+
+---
+
+### Example 2 — Billing & Payments (Duplicate Charge)
+
+| Field | Value |
+|---|---|
+| **Summary** | Charged twice for monthly subscription |
+| **Description** | I was charged twice for my monthly subscription in January. My bank shows two transactions of $49.99 on the same day. |
+| **Issue Type** | 💳 Billing |
+| **Affected System** | Payment Portal |
+| **Priority** | 🟠 High |
+
+**Expected result:**
+```
+💳 Team:   Billing and Payments
+💬 Reason: Duplicate charge issues have consistently been resolved by the Billing and Payments team.
+```
+
+---
+
+## 📁 Project Structure
+
+```
+smart-support-ai/
+├── backend/
+│   ├── embedder.py          # SentenceTransformers wrapper with LRU model cache
+│   ├── endee_client.py      # Direct HTTP client for Endee (bypasses pydantic v1 SDK)
+│   └── main.py              # FastAPI app — endpoints, RAG logic, static file serving
+├── static/
+│   └── index.html           # Jira-style frontend UI
+├── data/
+│   └── cleaned_tickets.csv  # 16,340 historical support tickets (gitignored)
+├── ingest_tickets.py        # One-time data ingestion pipeline
+├── test_setup.py            # Full system diagnostics (9 checks)
+├── requirements.txt         # Python dependencies
+└── README.md
+```
+
+---
+
+## ⚙️ Configuration
+
+**`backend/endee_client.py`**
+```python
+INDEX_NAME = "tickets"    # Endee index name
+DIMENSION  = 384          # Must match embedding model output
+BASE_URL   = "http://127.0.0.1:8080/api/v1"
+```
+
+**`backend/embedder.py`**
+```python
+MODEL_NAME    = "all-MiniLM-L6-v2"
+EMBEDDING_DIM = 384
+```
+
+**Environment variables** (prevent HuggingFace network calls on every startup):
+```bash
+export TRANSFORMERS_OFFLINE=1
+export HF_DATASETS_OFFLINE=1
+```
+
+---
+
+## 🔧 Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| API times out on startup | `export TRANSFORMERS_OFFLINE=1` before starting uvicorn |
+| `assign-rag` / `resolve-rag` times out | Llama 3 is slow on first inference — retry once it's warm |
+| Index is empty | Run `python ingest_tickets.py` |
+| Endee not running | `cd ~/endee && export NDD_DATA_DIR=$(pwd)/data && ./build/ndd-avx2` |
+| Ollama not reachable | `ollama serve` then `ollama pull llama3` |
+
+---
+
+## 📄 License
+
+MIT
